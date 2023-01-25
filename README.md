@@ -1,11 +1,11 @@
-# NTP7Client
+# NTP7Client for Arduino Mbed Boards - RP2040, Nano33 BLE, Portenta H7
 
 Connect to a NTP server, load RTC clock, keep realtime local.
 This way there is no need to frequently request NTP time, leave it to daily update by example
 here is how:
 
 ```cpp
-#include <NTPClient.h>
+#include <NTP7Client.h>
 // change next line to use with another board/shield
 // #include <ESP8266WiFi.h>
 #include <WiFi.h> // for WiFi shield
