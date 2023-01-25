@@ -1,6 +1,6 @@
 /**
  * The MIT License (MIT)
- * Copyright (c) 2015 by Fabrice Weinberg
+ * Copyright (c) 2015 by Jay Fox
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,49 +19,50 @@
  * SOFTWARE.
  */
 
-#include "NTPClient.h"
+#include "NTP7Client.h"
+#include "Debug.h"
 
-NTPClient::NTPClient(UDP& udp) {
+NTP7Client::NTP7Client(UDP& udp) {
   this->_udp            = &udp;
 }
 
-NTPClient::NTPClient(UDP& udp, long timeOffset) {
+NTP7Client::NTP7Client(UDP& udp, long timeOffset) {
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
 }
 
-NTPClient::NTPClient(UDP& udp, const char* poolServerName) {
+NTP7Client::NTP7Client(UDP& udp, const char* poolServerName) {
   this->_udp            = &udp;
   this->_poolServerName = poolServerName;
 }
 
-NTPClient::NTPClient(UDP& udp, IPAddress poolServerIP) {
+NTP7Client::NTP7Client(UDP& udp, IPAddress poolServerIP) {
   this->_udp            = &udp;
   this->_poolServerIP   = poolServerIP;
   this->_poolServerName = NULL;
 }
 
-NTPClient::NTPClient(UDP& udp, const char* poolServerName, long timeOffset) {
+NTP7Client::NTP7Client(UDP& udp, const char* poolServerName, long timeOffset) {
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
   this->_poolServerName = poolServerName;
 }
 
-NTPClient::NTPClient(UDP& udp, IPAddress poolServerIP, long timeOffset){
+NTP7Client::NTP7Client(UDP& udp, IPAddress poolServerIP, long timeOffset){
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
   this->_poolServerIP   = poolServerIP;
   this->_poolServerName = NULL;
 }
 
-NTPClient::NTPClient(UDP& udp, const char* poolServerName, long timeOffset, unsigned long updateInterval) {
+NTP7Client::NTP7Client(UDP& udp, const char* poolServerName, long timeOffset, unsigned long updateInterval) {
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
   this->_poolServerName = poolServerName;
   this->_updateInterval = updateInterval;
 }
 
-NTPClient::NTPClient(UDP& udp, IPAddress poolServerIP, long timeOffset, unsigned long updateInterval) {
+NTP7Client::NTP7Client(UDP& udp, IPAddress poolServerIP, long timeOffset, unsigned long updateInterval) {
   this->_udp            = &udp;
   this->_timeOffset     = timeOffset;
   this->_poolServerIP   = poolServerIP;
@@ -69,11 +70,11 @@ NTPClient::NTPClient(UDP& udp, IPAddress poolServerIP, long timeOffset, unsigned
   this->_updateInterval = updateInterval;
 }
 
-void NTPClient::begin() {
+void NTP7Client::begin() {
   this->begin(NTP_DEFAULT_LOCAL_PORT);
 }
 
-void NTPClient::begin(unsigned int port) {
+void NTP7Client::begin(unsigned int port) {
   this->_port = port;
 
   this->_udp->begin(this->_port);
@@ -81,10 +82,8 @@ void NTPClient::begin(unsigned int port) {
   this->_udpSetup = true;
 }
 
-bool NTPClient::forceUpdate() {
-  #ifdef DEBUG_NTPClient
-    Serial.println("Update from NTP Server");
-  #endif
+bool NTP7Client::forceUpdate() {
+    Debugln("* Update from NTP Server");
 
   // flush any existing packets
   while(this->_udp->parsePacket() != 0)
@@ -113,11 +112,11 @@ bool NTPClient::forceUpdate() {
   unsigned long secsSince1900 = highWord << 16 | lowWord;
 
   this->_currentEpoc = secsSince1900 - SEVENZYYEARS;
-
+  RTCsettime( (time_t) (secsSince1900 - SEVENZYYEARS + _timeOffset) ); // set RTC
   return true;  // return true after successful update
 }
 
-bool NTPClient::update() {
+bool NTP7Client::update() {
   if ((millis() - this->_lastUpdate >= this->_updateInterval)     // Update after _updateInterval
     || this->_lastUpdate == 0) {                                // Update if there was no update yet.
     if (!this->_udpSetup || this->_port != NTP_DEFAULT_LOCAL_PORT) this->begin(this->_port); // setup the UDP client if needed
@@ -126,30 +125,28 @@ bool NTPClient::update() {
   return false;   // return false if update does not occur
 }
 
-bool NTPClient::isTimeSet() const {
+bool NTP7Client::isTimeSet() const {
   return (this->_lastUpdate != 0); // returns true if the time has been set, else false
 }
 
-unsigned long NTPClient::getEpochTime() const {
-  return this->_timeOffset + // User offset
-         this->_currentEpoc + // Epoch returned by the NTP server
-         ((millis() - this->_lastUpdate) / 1000); // Time since last update
+unsigned long NTP7Client::getEpochTime() const {
+  return this->RTCgettime();
 }
 
-int NTPClient::getDay() const {
+int NTP7Client::getDay() const {
   return (((this->getEpochTime()  / 86400L) + 4 ) % 7); //0 is Sunday
 }
-int NTPClient::getHours() const {
+int NTP7Client::getHours() const {
   return ((this->getEpochTime()  % 86400L) / 3600);
 }
-int NTPClient::getMinutes() const {
+int NTP7Client::getMinutes() const {
   return ((this->getEpochTime() % 3600) / 60);
 }
-int NTPClient::getSeconds() const {
+int NTP7Client::getSeconds() const {
   return (this->getEpochTime() % 60);
 }
 
-String NTPClient::getFormattedTime() const {
+String NTP7Client::getFormattedTime() const {
   unsigned long rawTime = this->getEpochTime();
   unsigned long hours = (rawTime % 86400L) / 3600;
   String hoursStr = hours < 10 ? "0" + String(hours) : String(hours);
@@ -163,25 +160,25 @@ String NTPClient::getFormattedTime() const {
   return hoursStr + ":" + minuteStr + ":" + secondStr;
 }
 
-void NTPClient::end() {
+void NTP7Client::end() {
   this->_udp->stop();
 
   this->_udpSetup = false;
 }
 
-void NTPClient::setTimeOffset(int timeOffset) {
+void NTP7Client::setTimeOffset(int timeOffset) {
   this->_timeOffset     = timeOffset;
 }
 
-void NTPClient::setUpdateInterval(unsigned long updateInterval) {
+void NTP7Client::setUpdateInterval(unsigned long updateInterval) {
   this->_updateInterval = updateInterval;
 }
 
-void NTPClient::setPoolServerName(const char* poolServerName) {
+void NTP7Client::setPoolServerName(const char* poolServerName) {
     this->_poolServerName = poolServerName;
 }
 
-void NTPClient::sendNTPPacket() {
+void NTP7Client::sendNTPPacket() {
   // set all bytes in the buffer to 0
   memset(this->_packetBuffer, 0, NTP_PACKET_SIZE);
   // Initialize values needed to form NTP request
@@ -206,7 +203,33 @@ void NTPClient::sendNTPPacket() {
   this->_udp->endPacket();
 }
 
-void NTPClient::setRandomPort(unsigned int minValue, unsigned int maxValue) {
+void NTP7Client::setRandomPort(unsigned int minValue, unsigned int maxValue) {
   randomSeed(analogRead(0));
   this->_port = random(minValue, maxValue);
+}
+
+void NTP7Client::setEpochTime(unsigned long epoch) 
+{
+    RTCsettime((time_t) epoch);
+}
+
+// Mbed RTC time functions
+void NTP7Client::RTCsettime(time_t epoch)
+{
+  set_time(epoch);
+}
+
+unsigned long NTP7Client::RTCgettime() const
+{
+  timeval t;
+  gettimeofday(&t, NULL);
+        //sprintf(buf,"* Timeval t : %ld ", t.tv_sec);
+        //Serial.println(buf);
+  return ( (unsigned long) t.tv_sec);
+}
+
+char * NTP7Client::getFormattedTimeDay() 
+{
+  time_t seconds = RTCgettime();
+  return ctime(&seconds);
 }

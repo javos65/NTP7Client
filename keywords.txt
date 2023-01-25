@@ -2,7 +2,7 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-NTPClient	KEYWORD1
+NTP7Client	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -18,7 +18,9 @@ getHours	KEYWORD2
 getMinutes	KEYWORD2
 getSeconds	KEYWORD2
 getFormattedTime	KEYWORD2
+getFormattedTimeDay	KEYWORD2
 getEpochTime	KEYWORD2
 setTimeOffset	KEYWORD2
 setUpdateInterval	KEYWORD2
 setPoolServerName	KEYWORD2
+setEpochTime	KEYWORD2

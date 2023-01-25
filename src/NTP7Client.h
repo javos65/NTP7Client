@@ -1,14 +1,15 @@
 #pragma once
 
 #include "Arduino.h"
-
+#include "mbed.h"
 #include <Udp.h>
+
 
 #define SEVENZYYEARS 2208988800UL
 #define NTP_PACKET_SIZE 48
 #define NTP_DEFAULT_LOCAL_PORT 1337
 
-class NTPClient {
+class NTP7Client {
   private:
     UDP*          _udp;
     bool          _udpSetup       = false;
@@ -26,16 +27,18 @@ class NTPClient {
     byte          _packetBuffer[NTP_PACKET_SIZE];
 
     void          sendNTPPacket();
+    void          RTCsettime(time_t epoch);
+    unsigned long RTCgettime() const;
 
   public:
-    NTPClient(UDP& udp);
-    NTPClient(UDP& udp, long timeOffset);
-    NTPClient(UDP& udp, const char* poolServerName);
-    NTPClient(UDP& udp, const char* poolServerName, long timeOffset);
-    NTPClient(UDP& udp, const char* poolServerName, long timeOffset, unsigned long updateInterval);
-    NTPClient(UDP& udp, IPAddress poolServerIP);
-    NTPClient(UDP& udp, IPAddress poolServerIP, long timeOffset);
-    NTPClient(UDP& udp, IPAddress poolServerIP, long timeOffset, unsigned long updateInterval);
+    NTP7Client(UDP& udp);
+    NTP7Client(UDP& udp, long timeOffset);
+    NTP7Client(UDP& udp, const char* poolServerName);
+    NTP7Client(UDP& udp, const char* poolServerName, long timeOffset);
+    NTP7Client(UDP& udp, const char* poolServerName, long timeOffset, unsigned long updateInterval);
+    NTP7Client(UDP& udp, IPAddress poolServerIP);
+    NTP7Client(UDP& udp, IPAddress poolServerIP, long timeOffset);
+    NTP7Client(UDP& udp, IPAddress poolServerIP, long timeOffset, unsigned long updateInterval);
 
     /**
      * Set time server name
@@ -61,7 +64,7 @@ class NTPClient {
 
     /**
      * This should be called in the main loop of your application. By default an update from the NTP Server is only
-     * made every 60 seconds. This can be configured in the NTPClient constructor.
+     * made every 60 seconds. This can be configured in the NTP7Client constructor.
      *
      * @return true on success, false on failure
      */
@@ -75,7 +78,7 @@ class NTPClient {
     bool forceUpdate();
 
     /**
-     * This allows to check if the NTPClient successfully received a NTP packet and set the time.
+     * This allows to check if the NTP7Client successfully received a NTP packet and set the time.
      *
      * @return true if time has been set, else false
      */
@@ -98,14 +101,20 @@ class NTPClient {
     void setUpdateInterval(unsigned long updateInterval);
 
     /**
-     * @return time formatted like `hh:mm:ss`
+     * @return RTC time formatted like `hh:mm:ss`
      */
     String getFormattedTime() const;
 
+    char * getFormattedTimeDay() ;
     /**
-     * @return time in seconds since Jan. 1, 1970
+     * @return RTC time in seconds since Jan. 1, 1970
      */
     unsigned long getEpochTime() const;
+
+    /**
+     * Set RTC in Epoch time:  time in seconds since Jan. 1, 1970
+     */
+    void setEpochTime(unsigned long epoch) ;
 
     /**
      * Stops the underlying UDP client
